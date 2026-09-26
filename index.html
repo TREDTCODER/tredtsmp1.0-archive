@@ -1,103 +1,374 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TREDT SMP 1.0 Public Archive</title>
+<title>TREDT SMP 1.0 Public Archive Terminal</title>
 
 <style>
+:root {
+    --crt-green: #33ff33;
+    --crt-green-glow: rgba(51, 255, 51, 0.65);
+    --crt-green-dim: #1d991d;
+    --crt-bg: #030a03;
+    --font-mono: "Courier New", monospace;
+}
+
+* {
+    box-sizing: border-box;
+    user-select: none;
+}
+
 html, body {
     margin: 0;
+    padding: 0;
     width: 100%;
     height: 100%;
-    background: #000;
-    color: #fff;
-    font-family: "Courier New", monospace;
+    background-color: var(--crt-bg);
+    color: var(--crt-green);
+    font-family: var(--font-mono);
     overflow: hidden;
+    font-size: 19px;
+    text-shadow: 0 0 4px var(--crt-green-glow), 0 0 8px var(--crt-green-glow);
+}
+
+.crt-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 100;
+    background: 
+        radial-gradient(circle at center, transparent 60%, rgba(0, 0, 0, 0.9) 100%),
+        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%);
+    background-size: 100% 100%, 100% 4px;
+    box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.95);
+    animation: crtFlicker 0.18s infinite;
+}
+
+@keyframes crtFlicker {
+    0% { opacity: 0.96; }
+    50% { opacity: 1; }
+    100% { opacity: 0.98; }
 }
 
 .screen {
     position: absolute;
     inset: 0;
-    padding: 28px;
-    box-sizing: border-box;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    z-index: 10;
 }
 
 #startScreen {
-    display: flex;
     justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: radial-gradient(circle at center, #0a200a 0%, #030a03 100%);
+}
+
+.terminal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 12px;
+    border-bottom: 2px dashed var(--crt-green-dim);
+    margin-bottom: 16px;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.header-status {
+    display: flex;
+    gap: 16px;
     align-items: center;
 }
 
-#bootScreen,
-#archiveScreen {
+.status-badge {
+    padding: 2px 8px;
+    border: 1px solid var(--crt-green);
+    border-radius: 2px;
+    font-size: 15px;
+    background: rgba(51, 255, 51, 0.1);
+}
+
+#bootScreen, #archiveScreen {
     display: none;
 }
 
-#openBtn {
-    background: #7CFC00;
-    color: #000;
-    border: 3px solid #7CFC00;
-    padding: 22px 46px;
-    font-size: 30px;
-    font-family: inherit;
+.retro-title {
+    font-size: 38px;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.retro-subtitle {
+    font-size: 20px;
+    color: var(--crt-green-dim);
+    margin-bottom: 32px;
+}
+
+.retro-btn {
+    background: var(--crt-green);
+    color: #030a03;
+    border: 3px solid var(--crt-green);
+    padding: 16px 36px;
+    font-size: 24px;
+    font-family: var(--font-mono);
+    font-weight: bold;
     cursor: pointer;
+    box-shadow: 0 0 16px var(--crt-green-glow);
+    transition: all 0.15s ease-in-out;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
 }
 
-#openBtn:hover {
-    background: #000;
-    color: #7CFC00;
+.retro-btn:hover, .retro-btn:focus {
+    background: #030a03;
+    color: var(--crt-green);
+    box-shadow: 0 0 28px var(--crt-green);
+    outline: none;
+    transform: translateY(-2px);
 }
 
-#bootTerminal,
-#archiveTerminal {
+.button-group {
+    display: flex;
+    margin-top: 18px;
+    margin-bottom: 18px;
+}
+
+.terminal-body {
+    flex: 1;
+    overflow-y: auto;
     white-space: pre-wrap;
-    font-size: 22px;
     line-height: 1.4;
+    font-size: 20px;
+    padding-right: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--crt-green) var(--crt-bg);
 }
 
-.cursor {
-    animation: blink 1s steps(2) infinite;
+.terminal-body::-webkit-scrollbar {
+    width: 8px;
+}
+.terminal-body::-webkit-scrollbar-track {
+    background: var(--crt-bg);
+}
+.terminal-body::-webkit-scrollbar-thumb {
+    background: var(--crt-green-dim);
+    border-radius: 2px;
 }
 
-@keyframes blink {
+.command-line {
+    display: flex;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(51, 255, 51, 0.2);
+    flex-shrink: 0;
+}
+
+.prompt {
+    color: var(--crt-green);
+    margin-right: 10px;
+    white-space: nowrap;
+    font-weight: bold;
+}
+
+.cmd-input {
+    background: transparent;
+    border: none;
+    color: var(--crt-green);
+    font-family: var(--font-mono);
+    font-size: 20px;
+    flex: 1;
+    outline: none;
+    text-shadow: 0 0 4px var(--crt-green-glow);
+    user-select: text;
+}
+
+.cursor-block {
+    display: inline-block;
+    width: 12px;
+    height: 20px;
+    background-color: var(--crt-green);
+    box-shadow: 0 0 8px var(--crt-green);
+    vertical-align: middle;
+    animation: cursorBlink 0.9s steps(2) infinite;
+    margin-left: 2px;
+}
+
+@keyframes cursorBlink {
+    0%, 100% { opacity: 1; }
     50% { opacity: 0; }
 }
 
-.downloadBtn {
-    display: inline-block;
-    margin-top: 22px;
-    padding: 14px 24px;
-    border: 2px solid #7CFC00;
-    color: #7CFC00;
-    text-decoration: none;
-    font-size: 22px;
+.chip-bar {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-top: 10px;
+    padding-bottom: 4px;
+    flex-shrink: 0;
 }
 
-.downloadBtn:hover {
-    background: #7CFC00;
-    color: #000;
+.cmd-chip {
+    background: rgba(51, 255, 51, 0.08);
+    border: 1px solid var(--crt-green-dim);
+    color: var(--crt-green);
+    padding: 4px 12px;
+    font-size: 16px;
+    border-radius: 2px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+
+.cmd-chip:hover {
+    background: var(--crt-green);
+    color: #030a03;
+}
+
+#matrixCanvas {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: none;
+    pointer-events: none;
+}
+
+@media (max-width: 680px) {
+    .screen { padding: 14px; }
+    .retro-title { font-size: 26px; }
+    .retro-subtitle { font-size: 16px; }
+    .terminal-body { font-size: 16px; }
+    .retro-btn { font-size: 18px; padding: 12px 20px; width: 100%; }
+    .terminal-header { font-size: 15px; flex-direction: column; align-items: flex-start; gap: 6px; }
 }
 </style>
-
 </head>
 <body>
 
+<div class="crt-overlay"></div>
+<canvas id="matrixCanvas"></canvas>
+
+<!-- START SCREEN -->
 <div id="startScreen" class="screen">
-    <button id="openBtn">OPEN ARCHIVE</button>
+    <div class="retro-title">TREDT SMP 1.0 ARCHIVE</div>
+    <div class="retro-subtitle">V1.02(R) Historical Preservation Terminal</div>
+    <button id="openBtn" class="retro-btn">
+        OPEN ARCHIVE
+    </button>
 </div>
 
+<!-- BOOT SCREEN -->
 <div id="bootScreen" class="screen">
-    <div id="bootTerminal"></div>
+    <div class="terminal-header">
+        <div>TREDT BIOS v1.02 - BOOT SEQUENCE</div>
+        <div class="header-status">
+            <span class="status-badge" id="soundStatusBtn" style="cursor:pointer;">AUDIO: ON</span>
+            <span class="status-badge">POST: OK</span>
+        </div>
+    </div>
+    <div id="bootTerminal" class="terminal-body"></div>
 </div>
 
+<!-- ARCHIVE TERMINAL MAIN SCREEN -->
 <div id="archiveScreen" class="screen">
-    <div id="archiveTerminal"></div>
-    <a class="downloadBtn" href="https://github.com/TREDTCODER/tredtsmp1.0-archive/releases/latest/download/TREDT_SMP_1.0_Archive.rar">DOWNLOAD ARCHIVE</a>
+    <div class="terminal-header">
+        <div>TREDT SMP 1.0 PUBLIC ARCHIVE SYSTEM [C:\TREDT_ARCHIVE]</div>
+        <div class="header-status">
+            <span class="status-badge">STATUS: ONLINE</span>
+            <span class="status-badge" id="soundToggleArchive" style="cursor:pointer;">AUDIO: ON</span>
+        </div>
+    </div>
+
+    <div id="archiveTerminal" class="terminal-body"></div>
+
+    <!-- SINGLE ACTION BUTTON AREA -->
+    <div class="button-group">
+        <a class="retro-btn" href="https://github.com/TREDTCODER/tredtsmp1.0-archive/releases/latest/download/TREDT_SMP_1.0_Archive.rar" target="_blank" id="downloadBtn">
+            DOWNLOAD ARCHIVE
+        </a>
+    </div>
+
+    <!-- Quick action chips -->
+    <div class="chip-bar">
+        <div class="cmd-chip" onclick="executeQuickCmd('dir')">dir</div>
+        <div class="cmd-chip" onclick="executeQuickCmd('download')">download</div>
+        <div class="cmd-chip" onclick="executeQuickCmd('about')">about</div>
+        <div class="cmd-chip" onclick="executeQuickCmd('matrix')">matrix</div>
+        <div class="cmd-chip" onclick="executeQuickCmd('clear')">clear</div>
+    </div>
+
+    <!-- CLI Input Prompt -->
+    <div class="command-line">
+        <span class="prompt">C:\TREDT_ARCHIVE&gt;</span>
+        <input type="text" id="cliInput" class="cmd-input" autocomplete="off" spellcheck="false" autofocus>
+        <span class="cursor-block"></span>
+    </div>
 </div>
 
 <script>
+let soundEnabled = true;
+let audioCtx = null;
+
+function initAudio() {
+    if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+            audioCtx = new AudioContextClass();
+        }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}
+
+function playBeep(freq = 800, duration = 0.08, type = 'sine') {
+    if (!soundEnabled) return;
+    try {
+        initAudio();
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    } catch(e) {}
+}
+
+function playKeyClick() {
+    if (!soundEnabled) return;
+    playBeep(1200 + Math.random() * 400, 0.012, 'triangle');
+}
+
+function playPowerOnSound() {
+    if (!soundEnabled) return;
+    playBeep(440, 0.1, 'square');
+    setTimeout(() => playBeep(880, 0.22, 'sine'), 120);
+}
+
+function toggleAudio() {
+    soundEnabled = !soundEnabled;
+    const txt = `AUDIO: ${soundEnabled ? 'ON' : 'OFF'}`;
+    document.getElementById('soundStatusBtn').textContent = txt;
+    document.getElementById('soundToggleArchive').textContent = txt;
+}
+
+document.getElementById('soundStatusBtn').addEventListener('click', toggleAudio);
+document.getElementById('soundToggleArchive').addEventListener('click', toggleAudio);
+
 const bootLines = [
 'TREDT UNION ARCHIVE V1.02(R) Archive System',
 'Version 1.02',
@@ -119,17 +390,17 @@ const bootLines = [
 '',
 'Launching archive terminal...',
 '',
-'C:\TREDT_ARCHIVE>'
+'C:\\TREDT_ARCHIVE>'
 ];
 
-const archiveText = `TREDT UNION ARCHIVE V1.02(R) Archive System
+const archiveInitialText = `TREDT UNION ARCHIVE V1.02(R) Archive System
 
-C:\TREDT_ARCHIVE> dir
+C:\\TREDT_ARCHIVE> dir
 
 Volume in drive C is TREDT_ARCHIVE
 Volume Serial Number is 57531-2026
 
-Directory of C:\TREDT_ARCHIVE
+Directory of C:\\TREDT_ARCHIVE
 
 TREDT SMP 1.0 PUBLIC ARCHIVE
 
@@ -137,7 +408,7 @@ Status : Archived
 Access : Public
 Archive Size : 1.59 GB
 File Size: 2.04 GB
-Files : 23,751 
+Files : 23,751
 File Type: .rar
 Directories : 530
 
@@ -149,49 +420,195 @@ IP: TREDTSMP.aternos.me:57531
 Port: 57531
 Press the button below to download the complete archive.
 
-C:\TREDT_ARCHIVE>`;
+C:\\TREDT_ARCHIVE>`;
 
+const startScreen = document.getElementById('startScreen');
+const bootScreen = document.getElementById('bootScreen');
+const archiveScreen = document.getElementById('archiveScreen');
 const bootTerminal = document.getElementById('bootTerminal');
 const archiveTerminal = document.getElementById('archiveTerminal');
+const cliInput = document.getElementById('cliInput');
 
 document.getElementById('openBtn').addEventListener('click', () => {
-document.getElementById('startScreen').style.display = 'none';
-document.getElementById('bootScreen').style.display = 'block';
+    initAudio();
+    playPowerOnSound();
 
-bootTerminal.textContent = '';
+    startScreen.style.display = 'none';
+    bootScreen.style.display = 'flex';
 
-let index = 0;
+    bootTerminal.textContent = '';
+    let lineIdx = 0;
 
-function printNextLine() {
-if (index < bootLines.length) {
-bootTerminal.textContent += bootLines[index] + '\n';
-index++;
+    function printNextBootLine() {
+        if (lineIdx < bootLines.length) {
+            bootTerminal.textContent += bootLines[lineIdx] + '\n';
+            bootTerminal.scrollTop = bootTerminal.scrollHeight;
+            playKeyClick();
+            lineIdx++;
+            setTimeout(printNextBootLine, 250);
+        } else {
+            setTimeout(showArchiveTerminal, 500);
+        }
+    }
 
-  // Keep the newest line visible
-  bootTerminal.scrollTop = bootTerminal.scrollHeight;
-
-  setTimeout(printNextLine, 300);
-} else {
-  setTimeout(showArchive, 600);
-}
-
-}
-
-printNextLine();
+    printNextBootLine();
 });
 
-function showArchive() {
-document.getElementById('bootScreen').style.display = 'none';
-document.getElementById('archiveScreen').style.display = 'block';
+function showArchiveTerminal() {
+    bootScreen.style.display = 'none';
+    archiveScreen.style.display = 'flex';
+    archiveTerminal.textContent = archiveInitialText;
+    archiveTerminal.scrollTop = archiveTerminal.scrollHeight;
+    cliInput.focus();
+}
 
-archiveTerminal.textContent = archiveText;
+const commandHistory = [];
+let historyIndex = -1;
 
-const cursor = document.createElement('span');
-cursor.className = 'cursor';
-cursor.textContent = '_';
-archiveTerminal.appendChild(cursor);
+function appendToTerminal(text) {
+    archiveTerminal.textContent += '\n' + text;
+    archiveTerminal.scrollTop = archiveTerminal.scrollHeight;
+}
+
+function handleCommand(cmdRaw) {
+    const cmd = cmdRaw.trim().toLowerCase();
+    if (!cmd) return;
+
+    commandHistory.push(cmdRaw);
+    historyIndex = commandHistory.length;
+
+    appendToTerminal(`C:\\TREDT_ARCHIVE> ${cmdRaw}`);
+    playBeep(700, 0.04, 'square');
+
+    switch(cmd) {
+        case 'dir':
+        case 'ls':
+            appendToTerminal(` Directory of C:\\TREDT_ARCHIVE
+
+08/24/2026  12:00 PM    <DIR>          world
+08/24/2026  12:00 PM    <DIR>          world_nether
+08/24/2026  12:00 PM    <DIR>          world_the_end
+08/24/2026  12:00 PM    <DIR>          playerdata
+08/24/2026  12:00 PM    <DIR>          stats
+08/24/2026  12:00 PM     1,707,335,680 TREDT_SMP_1.0_Archive.rar
+               1 File(s)  1,707,335,680 bytes
+               5 Dir(s)   23,751 total files preserved`);
+            break;
+
+        case 'download':
+            appendToTerminal(`Initiating download for TREDT_SMP_1.0_Archive.rar...`);
+            document.getElementById('downloadBtn').click();
+            break;
+
+        case 'clear':
+        case 'cls':
+            archiveTerminal.textContent = 'C:\\TREDT_ARCHIVE>';
+            break;
+
+        case 'about':
+            appendToTerminal(`TREDT SMP 1.0 Historical Preservation:
+The TREDT SMP 1.0 server has been permanently dissolved and preserved.
+All world region files, player profiles, and structures are included
+in the public archive for historical access.`);
+            break;
+
+        case 'matrix':
+            toggleMatrixEffect();
+            break;
+
+        default:
+            appendToTerminal(`Bad command or file name: '${cmdRaw}'. Commands: dir, download, about, matrix, clear`);
+            break;
+    }
+
+    archiveTerminal.scrollTop = archiveTerminal.scrollHeight;
+}
+
+cliInput.addEventListener('keydown', (e) => {
+    playKeyClick();
+    if (e.key === 'Enter') {
+        const val = cliInput.value;
+        cliInput.value = '';
+        handleCommand(val);
+    } else if (e.key === 'ArrowUp') {
+        if (commandHistory.length > 0 && historyIndex > 0) {
+            historyIndex--;
+            cliInput.value = commandHistory[historyIndex];
+        }
+        e.preventDefault();
+    } else if (e.key === 'ArrowDown') {
+        if (historyIndex < commandHistory.length - 1) {
+            historyIndex++;
+            cliInput.value = commandHistory[historyIndex];
+        } else {
+            historyIndex = commandHistory.length;
+            cliInput.value = '';
+        }
+        e.preventDefault();
+    }
+});
+
+function executeQuickCmd(cmdStr) {
+    cliInput.value = cmdStr;
+    handleCommand(cmdStr);
+    cliInput.value = '';
+    cliInput.focus();
+}
+
+archiveScreen.addEventListener('click', (e) => {
+    if (e.target.tagName !== 'A' && e.target.tagName !== 'BUTTON' && !e.target.classList.contains('cmd-chip')) {
+        cliInput.focus();
+    }
+});
+
+let matrixActive = false;
+let matrixInterval = null;
+const canvas = document.getElementById('matrixCanvas');
+const ctx = canvas.getContext('2d');
+
+function toggleMatrixEffect() {
+    matrixActive = !matrixActive;
+    if (matrixActive) {
+        canvas.style.display = 'block';
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZTREDTSMP';
+        const fontSize = 16;
+        const columns = Math.floor(canvas.width / fontSize);
+        const drops = Array(columns).fill(1);
+
+        matrixInterval = setInterval(() => {
+            ctx.fillStyle = 'rgba(3, 10, 3, 0.08)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#33ff33';
+            ctx.font = `${fontSize}px "Courier New", monospace`;
+
+            for (let i = 0; i < drops.length; i++) {
+                const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
+            }
+        }, 33);
+
+        appendToTerminal(`Matrix digital rain sequence activated. Enter 'matrix' again to exit.`);
+    } else {
+        clearInterval(matrixInterval);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        canvas.style.display = 'none';
+        appendToTerminal(`Matrix animation terminated.`);
+    }
+}
+
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 }
 </script>
-
 </body>
 </html>
